@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tlengrep"
+version = "2023.2.0"
+
+[tool.pytest.ini_options]
+disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
+addopts = [
+    "--import-mode=importlib",
+]
+pythonpath = [
+  "."
+]

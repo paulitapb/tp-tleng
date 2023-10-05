@@ -1,0 +1,8 @@
+#!/home/paula/Documents/COMPUTACION/TLeng-2c2023/2023-2c-tp-team-conrad/tlengrep/tp-tleng/bin/python3
+# -*- coding: utf-8 -*-
+import re
+import sys
+from pytest import console_main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(console_main())
