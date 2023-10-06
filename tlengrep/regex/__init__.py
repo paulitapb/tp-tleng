@@ -50,7 +50,7 @@ class Empty(RegEx):
         return False
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        return AFND()
 
     def _atomic(self):
         return True
@@ -66,7 +66,10 @@ class Lambda(RegEx):
         return word == ""
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        automata = AFND() 
+        automata.add_state('q0', True)
+        automata.mark_initial_state('q0')
+        return automata 
 
     def _atomic(self):
         return True
@@ -86,8 +89,13 @@ class Char(RegEx):
         return word == self.char
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
-
+        automata = AFND()
+        automata.add_state('q0', False) 
+        automata.add_state('q1',True)
+        automata.add_transition('q0','q1',self.char) 
+        automata.mark_initial_state('q0')
+        return automata
+        
     def _atomic(self):
         return True
 
@@ -109,7 +117,31 @@ class Concat(RegEx):
         return False
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        automata_exp1 = self.exp1.to_afnd() 
+        automata_exp2 = self.exp2.to_afnd()
+        
+        final_automata = AFND()
+        for state in automata_exp1.states:
+            final_automata.add_state(state+'_1',False)
+            if state == automata_exp1.initial_state:
+                final_automata.mark_initial_state(state+'_1')
+        
+        for state in automata_exp2.states: 
+            final_automata.add_state(state+'_2', state in automata_exp2.final_states)
+        
+        self._add_transitions(automata_exp1, final_automata,'_1')
+        self._add_transitions(automata_exp2, final_automata,'_2') 
+
+        for final_state in automata_exp1.final_states:
+            final_automata.add_transition(final_state+'_1',automata_exp2.initial_state+'_2','λ')
+        
+        return final_automata.normalize_states() 
+    
+    def _add_transitions(self, automata_exp1, final_automata,identifier):
+        for stateFrom,transitionFrom in automata_exp1.transitions.items():
+            for symbol,destinationStates in transitionFrom.items():
+                for statesTo in destinationStates: 
+                    final_automata.add_transition(stateFrom+identifier,statesTo+identifier,symbol)
 
     def _atomic(self):
         return False
@@ -130,7 +162,30 @@ class Union(RegEx):
         return self.exp1.naive_match(word) or self.exp2.naive_match(word)
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        automata_exp1 = self.exp1.to_afnd()
+        automata_exp2 = self.exp2.to_afnd()
+        final_automata = AFND()
+        
+        for state in automata_exp1.states:
+            final_automata.add_state(state+'_1',state in automata_exp1.final_states)
+        
+        for state in automata_exp2.states: 
+            final_automata.add_state(state+'_2', state in automata_exp2.final_states)
+
+        self._add_transitions(automata_exp1, final_automata,'_1')
+        self._add_transitions(automata_exp2, final_automata,'_2')
+        final_automata.add_state('q0',False)
+        final_automata.mark_initial_state('q0')
+        final_automata.add_transition('q0',automata_exp1.initial_state+'_1','λ')
+        final_automata.add_transition('q0',automata_exp2.initial_state+'_2','λ')
+        
+        return final_automata.normalize_states()
+    
+    def _add_transitions(self, automata_exp1, final_automata,identifier):
+        for stateFrom,transitionFrom in automata_exp1.transitions.items():
+            for symbol,destinationStates in transitionFrom.items():
+                for statesTo in destinationStates: 
+                    final_automata.add_transition(stateFrom+identifier,statesTo+identifier,symbol)
 
     def _atomic(self):
         return False
@@ -155,7 +210,18 @@ class Star(RegEx):
         return False
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        automata_exp = self.exp.to_afnd()
+        
+    
+        automata_exp.add_state("q0'",True)
+
+        
+        automata_exp.add_transition("q0'",automata_exp.initial_state,'λ')
+        automata_exp.mark_initial_state("q0'")
+
+        for final_state in automata_exp.final_states:
+            automata_exp.add_transition(final_state,automata_exp.initial_state+'_1','λ')
+        return automata_exp.normalize_states()
 
     def _atomic(self):
         return False
@@ -179,7 +245,11 @@ class Plus(RegEx):
         return False
 
     def to_afnd(self) -> AFND:
-        raise NotImplementedError
+        automata_exp = self.exp.to_afnd()
+        
+        for final_state in automata_exp.final_states: 
+            automata_exp.add_transition(final_state,automata_exp.initial_state,'λ') 
+        return automata_exp
 
     def _atomic(self) -> bool:
         return False
