@@ -29,8 +29,38 @@ class AFND(AF):
 
     def determinize(self) -> AFD:
         """Determiniza el autómata."""
-        raise NotImplementedError
 
+        states_to_visit = {self.initial_state}
+        visited_states = set()
+        
+        old_transitions = self.transitions
+        old_states = self.states
+        old_finals = self.final_states
+
+        self.transitions = dict()
+        self.states = set()
+        self.final_states = set()
+
+        while len(states_to_visit) > 0: 
+            current_state = states_to_visit.pop()
+            
+            for symb in self.alphabet: 
+                new_state = self.mover(current_state, symb)
+                states_to_visit.add(visited_states.difference(new_state))
+                #TO DO: sort estados- no los estoy pasando a strings aun 
+                self.add_state(new_state, any(lambda state: state in old_finals, new_state.keys()))
+                self.add_transition(current_state, new_state, symb)
+
+            visited_states.add(current_state)
+        
+        return self
+    
+    def mover(self, estado_desde, symb_cons):
+    
+        estados_alcanzables = dict(filter( 
+            lambda state_from, symb_states : state_from == estado_desde , self.transitions.items()))
+        return set(filter(lambda symbol, state_to: symbol == symb_cons, estados_alcanzables.items()))
+    
     def _rename_state_in_transitions(self, old_name: Hashable, new_name: Hashable):
         """Renombra un estado dentro de las transiciones del autómata."""
         self.transitions[new_name] = self.transitions[old_name]
